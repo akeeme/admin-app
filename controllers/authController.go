@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/akeeme/admin-app/models"
-	"golang.org/x/crypto/bcrypt"
-	"github.com/akeeme/admin-app/database"
-	"github.com/dgrijalva/jwt-go"
 	"strconv"
 	"time"
+
+	"github.com/akeeme/admin-app/database"
+	"github.com/akeeme/admin-app/models"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Register(c *fiber.Ctx) error {
@@ -80,7 +81,18 @@ func Login(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	return c.JSON(token)
+	cookie := fiber.Cookie{
+		Name: 		"jwt",
+		Value: 		token,
+		Expires: 	time.Now().Add(time.Hour * 24),
+		HTTPOnly: 	true,
+	}
+
+	c.Cookie(&cookie)
+
+	return c.JSON(fiber.Map{
+		"message": "success",
+	})
 
 
 
