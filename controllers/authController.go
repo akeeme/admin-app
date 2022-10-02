@@ -5,6 +5,9 @@ import (
 	"github.com/akeeme/admin-app/models"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/akeeme/admin-app/database"
+	"github.com/dgrijalva/jwt-go"
+	"strconv"
+	"time"
 )
 
 func Register(c *fiber.Ctx) error {
@@ -66,7 +69,18 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(user)
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		Issuer: 		strconv.Itoa(int(user.Id)),
+		ExpiresAt: 		time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	token, err := claims.SignedString([]byte("secret"))
+
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
+	return c.JSON(token)
 
 
 
