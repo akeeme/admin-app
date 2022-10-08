@@ -1,10 +1,13 @@
 package controllers
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/akeeme/admin-app/models"
-	"golang.org/x/crypto/bcrypt"
+	"strconv"
+	"time"
+	"github.com/akeeme/admin-app/util"
 	"github.com/akeeme/admin-app/database"
+	"github.com/akeeme/admin-app/models"
+	_ "github.com/dgrijalva/jwt-go"
+	"github.com/gofiber/fiber/v2"
 )
 
 func Register(c *fiber.Ctx) error {
@@ -23,16 +26,13 @@ func Register(c *fiber.Ctx) error {
 	}
 
 
-	password, _ := bcrypt.GenerateFromPassword([]byte(data["password"]), 14) // so we store password as a hash
-
-
-
 	user := models.User{
 		FirstName: data["first_name"],
 		LastName: data["last_name"],
 		Email: data["email"],
-		Password: password,
 	}
+
+	user.SetPassword(data["password"])
 
 	database.DB.Create(&user)
 
@@ -59,15 +59,58 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(data["password"])); err != nil {
+	if err := user.ComparePassword(data["password"]); err != nil {
 		c.Status(400)
 		return c.JSON(fiber.Map{
 			"message": "Incorrect password",
 		})
 	}
 
+	// create jwt token 
+	token, err := util.GenerateJWT(strconv.Itoa(int(user.Id)))
+
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
+	cookie := fiber.Cookie{
+		Name: 		"jwt",
+		Value: 		token,
+		Expires: 	time.Now().Add(time.Hour * 24),
+		HTTPOnly: 	true,
+	}
+
+	c.Cookie(&cookie)
+
+	return c.JSON(fiber.Map{
+		"message": "success",
+	})
+}
+
+func User(c *fiber.Ctx) error {
+	cookie := c.Cookies("jwt")
+
+	id, _ := util.ParseJWT(cookie)
+
+	var user models.User 
+	database.DB.Where("id = ?", id).First(&user)
+
 	return c.JSON(user)
 
+}
 
+func Logout(c *fiber.Ctx) error {
+	cookie := fiber.Cookie{
+		Name: "jwt",
+		Value: "",
+		Expires: time.Now().Add(-time.Hour),
+		HTTPOnly: true,
+	}
+
+	c.Cookie(&cookie)
+
+	return c.JSON(fiber.Map{
+		"message": "success",
+	})
 
 }

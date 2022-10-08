@@ -1,12 +1,13 @@
 package database
 
 import (
-	"github.com/joho/godotenv"
-    "os"
-    "gorm.io/gorm"
-    "gorm.io/driver/mysql"
+	_ "fmt"
+	"os"
+
 	"github.com/akeeme/admin-app/models"
-    _ "fmt"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
@@ -28,5 +29,5 @@ func Connect() {
 
 	DB = db
 
-	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.User{}, &models.Role{})
 }
