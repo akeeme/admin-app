@@ -6,7 +6,6 @@ import (
 	"github.com/akeeme/admin-app/database"
 	"github.com/akeeme/admin-app/models"
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/crypto/bcrypt"
 )
 
 
@@ -28,10 +27,7 @@ func CreateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-
-	password, _ := bcrypt.GenerateFromPassword([]byte("1234"), 14) // so we store password as a hash
-
-	user.Password = password
+	user.SetPassword("1234")
 
 	database.DB.Create(&user)
 
